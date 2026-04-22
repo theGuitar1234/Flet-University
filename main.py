@@ -206,6 +206,31 @@ def admin_dashboard_view(page: ft.Page, user_state):
     def logout_user(e):
         user_state["current_user"] = None
         page.go("/")
+    
+    def show_snack(message):
+        page.show_dialog(
+            ft.SnackBar(
+                content=ft.Text(message),
+                show_close_icon=True,
+            )
+        )
+
+    def open_quick_actions_sheet(e):
+        sheet = ft.BottomSheet(
+            show_drag_handle=True,
+            content=ft.Container(
+                padding=20,
+                content=ft.Column(
+                    [
+                        ft.Text("Quick actions", size=18, weight=ft.FontWeight.W_600),
+                        ft.Button("Show welcome message", on_click=lambda e: show_snack("Welcome back")),
+                        ft.Button("Close", on_click=lambda e: page.pop_dialog()),
+                    ],
+                    tight=True,
+                ),
+            ),
+        )
+        page.show_dialog(sheet)
 
     def open_edit_dialog(e):
         current_user = user_state["current_user"]
@@ -320,6 +345,37 @@ def admin_dashboard_view(page: ft.Page, user_state):
             expand=True,
         ),
     )
+    
+    menu_bar = ft.MenuBar(
+        controls=[
+            ft.SubmenuButton(
+                content=ft.Text("File"),
+                controls=[
+                    ft.MenuItemButton(
+                        content=ft.Text("Refresh"),
+                        on_click=lambda e: show_snack("Dashboard refreshed"),
+                    ),
+                    ft.MenuItemButton(
+                        content=ft.Text("Quick actions"),
+                        on_click=open_quick_actions_sheet,
+                    ),
+                ],
+            ),
+            ft.SubmenuButton(
+                content=ft.Text("Account"),
+                controls=[
+                    ft.MenuItemButton(
+                        content=ft.Text("Edit profile"),
+                        on_click=open_edit_dialog,
+                    ),
+                    ft.MenuItemButton(
+                        content=ft.Text("Logout"),
+                        on_click=logout_user,
+                    ),
+                ],
+            ),
+        ]
+    )
 
     header = ft.Container(
         bgcolor="white",
@@ -356,7 +412,121 @@ def admin_dashboard_view(page: ft.Page, user_state):
         border_radius=16,
         padding=20,
         width=500,
-        content=ft.Column([], expand=True),
+        content=ft.Column(
+            [
+                ft.Row(
+                    [
+                        ft.Container(
+                            width=180,
+                            height=100,
+                            bgcolor="#EAF4FF",
+                            border_radius=16,
+                            padding=15,
+                            content=ft.Column(
+                                [
+                                    ft.Text("Total slots", size=14, color="black54"),
+                                    ft.Text("120", size=28, weight=ft.FontWeight.BOLD),
+                                ],
+                                spacing=6,
+                            ),
+                        ),
+                        ft.Container(
+                            width=180,
+                            height=100,
+                            bgcolor="#E8FFF1",
+                            border_radius=16,
+                            padding=15,
+                            content=ft.Column(
+                                [
+                                    ft.Text("Occupied", size=14, color="black54"),
+                                    ft.Text("76", size=28, weight=ft.FontWeight.BOLD),
+                                ],
+                                spacing=6,
+                            ),
+                        ),
+                        ft.Container(
+                            width=180,
+                            height=100,
+                            bgcolor="#FFF4E8",
+                            border_radius=16,
+                            padding=15,
+                            content=ft.Column(
+                                [
+                                    ft.Text("Available", size=14, color="black54"),
+                                    ft.Text("44", size=28, weight=ft.FontWeight.BOLD),
+                                ],
+                                spacing=6,
+                            ),
+                        ),
+                    ],
+                    spacing=15,
+                    wrap=True,
+                ),
+
+                ft.Row(
+                    [
+                        ft.TextButton(
+                            "Basic button",
+                            on_click=lambda e: show_snack("Basic button clicked"),
+                        ),
+                        ft.OutlinedButton(
+                            "With icon",
+                            icon=ft.Icons.DIRECTIONS_CAR,
+                            on_click=lambda e: show_snack("Icon button clicked"),
+                        ),
+                        ft.FilledButton(
+                            "Click event",
+                            on_click=lambda e: show_snack("Click event fired"),
+                        ),
+                        ft.ElevatedButton(
+                            "Open BottomSheet",
+                            icon=ft.Icons.KEYBOARD_ARROW_UP,
+                            on_click=open_quick_actions_sheet,
+                        ),
+                    ],
+                    spacing=12,
+                    wrap=True,
+                ),
+
+                ft.Container(
+                    padding=10,
+                    border_radius=16,
+                    bgcolor="#F9FAFB",
+                    content=ft.DataTable(
+                        columns=[
+                            ft.DataColumn(label=ft.Text("Zone")),
+                            ft.DataColumn(label=ft.Text("Slot")),
+                            ft.DataColumn(label=ft.Text("Status")),
+                        ],
+                        rows=[
+                            ft.DataRow(
+                                cells=[
+                                    ft.DataCell(ft.Text("A")),
+                                    ft.DataCell(ft.Text("A-01")),
+                                    ft.DataCell(ft.Text("Occupied")),
+                                ]
+                            ),
+                            ft.DataRow(
+                                cells=[
+                                    ft.DataCell(ft.Text("A")),
+                                    ft.DataCell(ft.Text("A-02")),
+                                    ft.DataCell(ft.Text("Available")),
+                                ]
+                            ),
+                            ft.DataRow(
+                                cells=[
+                                    ft.DataCell(ft.Text("B")),
+                                    ft.DataCell(ft.Text("B-01")),
+                                    ft.DataCell(ft.Text("Reserved")),
+                                ]
+                            ),
+                        ],
+                    ),
+                ),
+            ],
+            spacing=20,
+            expand=True,
+        )
     )
 
     layout = ft.Row(
@@ -367,6 +537,7 @@ def admin_dashboard_view(page: ft.Page, user_state):
                 padding=20,
                 content=ft.Column(
                     [
+                        menu_bar,
                         header,
                         main_content,
                     ],
@@ -389,6 +560,7 @@ def main(page: ft.Page):
     db.init_db()
 
     user_state = {"current_user": None}
+    routes = ["/", "/register", "/login"]
 
     def toggle_theme(e):
         page.theme_mode = (
@@ -397,11 +569,70 @@ def main(page: ft.Page):
             else ft.ThemeMode.LIGHT
         )
         page.update()
+    
+    def handle_nav_change(e):
+        page.go(routes[e.control.selected_index])
 
     def route_change(e):
         if page.route == "/dashboard" and not user_state["current_user"]:
             page.go("/login")
             return
+        
+        page.appbar = None
+        page.bottom_appbar = None
+        page.navigation_bar = None
+        
+        if page.route in routes:
+            page.navigation_bar = ft.NavigationBar(
+                selected_index={"/": 0, "/register": 1, "/login": 2}.get(page.route, 0),
+                on_change=handle_nav_change,
+                destinations=[
+                    ft.NavigationBarDestination(icon=ft.Icons.HOME_OUTLINED, label="Home"),
+                    ft.NavigationBarDestination(icon=ft.Icons.PERSON_ADD_ALT_1, label="Register"),
+                    ft.NavigationBarDestination(icon=ft.Icons.LOGIN, label="Login"),
+                ],
+            )
+        
+        if page.route == "/dashboard":
+            page.appbar = ft.AppBar(
+                leading=ft.Icon(ft.Icons.LOCAL_PARKING, color=ft.Colors.WHITE),
+                leading_width=40,
+                title=ft.Text("SmartPark Dashboard"),
+                bgcolor="#0A85FF",
+                actions=[
+                    ft.IconButton(
+                        icon=ft.Icons.DARK_MODE_OUTLINED,
+                        icon_color=ft.Colors.WHITE,
+                        on_click=toggle_theme,
+                    ),
+                    ft.IconButton(
+                        icon=ft.Icons.NOTIFICATIONS_OUTLINED,
+                        icon_color=ft.Colors.WHITE,
+                        on_click=lambda e: page.show_dialog(
+                            ft.SnackBar(content=ft.Text("Notifications clicked"))
+                        ),
+                    ),
+                ],
+            )
+
+            page.bottom_appbar = ft.BottomAppBar(
+                bgcolor="#0A85FF",
+                content=ft.Row(
+                    controls=[
+                        ft.IconButton(
+                            icon=ft.Icons.HOME_OUTLINED,
+                            icon_color=ft.Colors.WHITE,
+                            on_click=lambda e: page.go("/dashboard"),
+                        ),
+                        ft.Container(expand=True),
+                        ft.IconButton(
+                            icon=ft.Icons.LOGOUT,
+                            icon_color=ft.Colors.WHITE,
+                            on_click=lambda e: user_state.update({"current_user": None}) or page.go("/"),
+                        ),
+                    ]
+                ),
+            )
 
         home_view = ft.View(
             route="/",
